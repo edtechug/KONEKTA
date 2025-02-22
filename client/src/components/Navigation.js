@@ -16,6 +16,7 @@ import {
 } from 'reactstrap';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+// import WeatherWidget from './WeatherWidget';
 
 const Navigation = () => {
 	const [isOpen, setIsOpen] = useState(false);
@@ -67,7 +68,16 @@ const Navigation = () => {
 							</Fragment>
 						)}
 					</Nav>
-					<NavbarText>{new Date().toLocaleDateString()}</NavbarText>
+					<div style={{
+                    	display: 'flex',
+						alignItems: 'center',
+						gap: '15px',
+						color: 'white',
+						flexWrap: 'wrap',
+					}}>
+						<NavbarText>{new Date().toUTCString()}</NavbarText>
+						{/* <WeatherWidget /> */}
+                	</div>
 				</Collapse>
 			</Navbar>
 		</div>

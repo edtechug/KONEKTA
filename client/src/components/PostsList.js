@@ -24,6 +24,22 @@ import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { getPosts, addPost } from '../actions/postActions';
+import MdEditor from 'react-markdown-editor-lite';
+import 'react-markdown-editor-lite/lib/index.css';
+import MarkdownIt from 'markdown-it';
+import DOMPurify from "dompurify"; 
+
+const mdParser = new MarkdownIt();
+
+const renderMarkdown = (markdownText) => {
+    return markdownText
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>') 
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>') 
+        .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>') 
+        .replace(/\*(.*?)\*/gim, '<em>$1</em>') 
+        .replace(/\n/g, '<br/>');
+};
 
 class PostsList extends Component {
 	state = {
@@ -69,6 +85,7 @@ class PostsList extends Component {
 						</Button>
 					</div>
 				) : null}
+				
 				<Modal isOpen={this.state.modal} toggle={this.toggle}>
 					<ModalHeader toggle={this.toggle}>Add new post</ModalHeader>
 					<Formik
@@ -83,7 +100,7 @@ class PostsList extends Component {
 							this.toggle();
 						}}
 					>
-						{({ errors, touched, isSubmitting }) => (
+						{({ values, setFieldValue, errors, touched, isSubmitting }) => (
 							<Form>
 								<ModalBody>
 									<Row form>
@@ -95,51 +112,36 @@ class PostsList extends Component {
 													name="title"
 													id="title"
 													tag={Field}
-													invalid={
-														errors.title && touched.title
-													}
+													invalid={errors.title && touched.title}
 												/>
-												<FormFeedback>
-													{errors.title}
-												</FormFeedback>
+												<FormFeedback>{errors.title}</FormFeedback>
 											</FormGroup>
 										</Col>
 									</Row>
 									<Row form>
 										<Col>
 											<FormGroup>
-												<Label for="content">
-													Content
-												</Label>
-												<Input
-													type="textarea"
-													name="content"
-													id="content"
-													tag={Field}
-													as="textarea"
-													invalid={
-														errors.content && touched.content
+												<Label for="content">Content</Label>
+												<MdEditor
+													value={values.content}
+													style={{ height: '250px' }}
+													renderHTML={(text) => mdParser.render(text)}
+													onChange={({ text }) =>
+														setFieldValue('content', text)
 													}
 												/>
-												<FormFeedback>
-													{errors.content}
-												</FormFeedback>
+												{errors.content && touched.content && (
+													<FormFeedback>{errors.content}</FormFeedback>
+												)}
 											</FormGroup>
 										</Col>
 									</Row>
 								</ModalBody>
 								<ModalFooter>
-									<Button
-										color="primary"
-										type="submit"
-										disabled={isSubmitting}
-									>
+									<Button color="primary" type="submit" disabled={isSubmitting}>
 										Add post
 									</Button>
-									<Button
-										color="secondary"
-										onClick={this.toggle}
-									>
+									<Button color="secondary" onClick={this.toggle}>
 										Cancel
 									</Button>
 								</ModalFooter>
@@ -150,13 +152,13 @@ class PostsList extends Component {
 				<Jumbotron>
 					<h1 className="display-4">Welcome to KONEKTA Forum!</h1>
 					<p className="lead">
-						Here is the place where you can discuss a MERN stack
-						related concepts with other people.
+						KONEKTA – Connecting Africa Through Knowledge, Innovation, and Technology. 🚀
 					</p>
 					<hr className="my-2" />
 					<p>
 						If you haven't done yet, we recommend you to{' '}
 						<Link to="/register">register a new account here</Link>.
+						<p>Join discussions across Africa! 🌍✨ {`🇺🇬 🇪🇬 🇳🇬 🇿🇦 🇰🇪 🇬🇭 🇪🇹 🇲🇦 🇨🇩 🇹🇳 🇿🇲 🇸🇩 🇸🇳 🇨🇲 🇿🇼 🇲🇿 🇲🇱 🇧🇫 🇲🇬 🇳🇪 🇲🇺 🇧🇼 🇪🇷 🇧🇮 🇱🇸 🇬🇲 🇱🇾 🇹🇬 🇸🇨 🇨🇫 🇹🇩 🇲🇼 🇩🇯`}</p>
 					</p>
 				</Jumbotron>
 				{loading ? (
@@ -179,7 +181,11 @@ class PostsList extends Component {
 								>
 									<ListGroupItem className="py-4">
 										<h3>{title}</h3>
-										<p>{content}</p>
+										<div
+											dangerouslySetInnerHTML={{
+												__html: DOMPurify.sanitize(renderMarkdown(content)), // Sanitize HTML to prevent XSS
+											}}
+										/>
 										<Link to={`/post/${_id}`}>
 											<Button color="primary">
 												Read post

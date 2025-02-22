@@ -18,6 +18,22 @@ import * as Yup from 'yup';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { getPost, addComment } from '../actions/postActions';
+import MdEditor from 'react-markdown-editor-lite';
+import 'react-markdown-editor-lite/lib/index.css';
+import MarkdownIt from 'markdown-it';
+import DOMPurify from "dompurify"; 
+
+const mdParser = new MarkdownIt();
+
+const renderMarkdown = (markdownText) => {
+    return markdownText
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>') 
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>') 
+        .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>') 
+        .replace(/\*(.*?)\*/gim, '<em>$1</em>') 
+        .replace(/\n/g, '<br/>');
+};
 
 class SinglePost extends Component {
 	componentDidMount() {
@@ -37,7 +53,11 @@ class SinglePost extends Component {
 		const Post = () => (
 			<div>
 				<h2>{title}</h2>
-				<p>{content}</p>
+				<div
+					dangerouslySetInnerHTML={{
+						__html: DOMPurify.sanitize(renderMarkdown(content)), // Sanitize HTML to prevent XSS
+					}}
+				/>
 				<small>Posted by: {postedBy?.username}</small><br />
 				<small>{new Date(postedAt).toLocaleString()}</small>
 			</div>

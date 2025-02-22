@@ -22,11 +22,11 @@ router.post(
 		properties: {
 			title: {
 				type: 'string',
-				maxLength: 30,
+				maxLength: 300,
 			},
 			content: {
 				type: 'string',
-				maxLength: 300,
+				maxLength: 50000,
 			},
 		},
 		required: ['title', 'content'],
