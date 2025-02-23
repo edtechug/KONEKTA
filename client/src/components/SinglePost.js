@@ -53,11 +53,7 @@ class SinglePost extends Component {
 		const Post = () => (
 			<div>
 				<h2>{title}</h2>
-				<div
-					dangerouslySetInnerHTML={{
-						__html: DOMPurify.sanitize(renderMarkdown(content)), // Sanitize HTML to prevent XSS
-					}}
-				/>
+				<p>{content}</p>
 				<small>Posted by: {postedBy?.username}</small><br />
 				<small>{new Date(postedAt).toLocaleString()}</small>
 			</div>
