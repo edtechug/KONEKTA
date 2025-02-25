@@ -11,7 +11,7 @@ ENV REACT_APP_BASENAME /
 COPY package.json ./
 COPY package-lock.json ./
 
-RUN npm install --silent
+RUN npm install
 
 COPY . ./
 
