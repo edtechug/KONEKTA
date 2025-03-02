@@ -28,8 +28,48 @@ import MdEditor from 'react-markdown-editor-lite';
 import 'react-markdown-editor-lite/lib/index.css';
 import MarkdownIt from 'markdown-it';
 import DOMPurify from "dompurify"; 
+import axios from 'axios';
 
 const mdParser = new MarkdownIt();
+
+const API_URL = process.env.REACT_APP_API_URI + '/api/posts';
+
+export const editPost = (postId, postData) => async (dispatch, getState) => {
+    try {
+        const token = getState().auth.token;
+        const config = {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+        };
+        const res = await axios.put(`${API_URL}/${postId}`, postData, config);
+        dispatch({
+            type: 'EDIT_POST',
+            payload: res.data,
+        });
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+export const deletePost = (postId) => async (dispatch, getState) => {
+    try {
+        const token = getState().auth.token;
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        };
+        await axios.delete(`${API_URL}/${postId}`, config);
+        dispatch({
+            type: 'DELETE_POST',
+            payload: postId,
+        });
+    } catch (err) {
+        console.error(err);
+    }
+};
 
 const renderMarkdown = (markdownText) => {
     return markdownText
@@ -42,113 +82,41 @@ const renderMarkdown = (markdownText) => {
 };
 
 class PostsList extends Component {
-	state = {
-		modal: false,
-	};
+    state = {
+        modal: false,
+        editModal: false,
+        currentPost: null,
+    };
 
-	schema = Yup.object().shape({
-		title: Yup.string().required('Title is required'),
-		content: Yup.string().required('Content is required'),
-	});
+    schema = Yup.object().shape({
+        title: Yup.string().required('Title is required'),
+        content: Yup.string().required('Content is required'),
+    });
 
-	toggle = () => {
-		this.setState((prevState) => ({
-			modal: !prevState.modal,
-		}));
-	};
+    toggle = () => {
+        this.setState((prevState) => ({ modal: !prevState.modal }));
+    };
 
-	componentDidMount() {
-		this.props.getPosts();
-	}
+    toggleEdit = (post = null) => {
+        this.setState({ editModal: !this.state.editModal, currentPost: post });
+    };
 
-	static propTypes = {
-		post: PropTypes.object.isRequired,
-		isAuthenticated: PropTypes.bool.isRequired,
-		getPosts: PropTypes.func.isRequired,
-		addPost: PropTypes.func.isRequired,
-	};
+    componentDidMount() {
+        this.props.getPosts();
+    }
 
-	render() {
-		const { posts, loading } = this.props.post;
+    handleDelete = (postId) => {
+        if (window.confirm('Are you sure you want to delete this post?')) {
+            this.props.deletePost(postId);
+        }
+    };
 
-		return (
-			<div>
-				{this.props.location.state !== undefined ? (
-					<Alert color="info">
-						{this.props.location.state.notification}
-					</Alert>
-				) : null}
-				{this.props.isAuthenticated ? (
-					<div className="mb-3">
-						<Button color="danger" onClick={this.toggle}>
-							Add new post
-						</Button>
-					</div>
-				) : null}
-				
-				<Modal isOpen={this.state.modal} toggle={this.toggle}>
-					<ModalHeader toggle={this.toggle}>Add new post</ModalHeader>
-					<Formik
-						initialValues={{ title: '', content: '' }}
-						validationSchema={this.schema}
-						onSubmit={(values, { setSubmitting, resetForm }) => {
-							this.props.addPost({
-								title: values.title,
-								content: values.content,
-							});
-							resetForm();
-							this.toggle();
-						}}
-					>
-						{({ values, setFieldValue, errors, touched, isSubmitting }) => (
-							<Form>
-								<ModalBody>
-									<Row form>
-										<Col>
-											<FormGroup>
-												<Label for="title">Title</Label>
-												<Input
-													type="text"
-													name="title"
-													id="title"
-													tag={Field}
-													invalid={errors.title && touched.title}
-												/>
-												<FormFeedback>{errors.title}</FormFeedback>
-											</FormGroup>
-										</Col>
-									</Row>
-									<Row form>
-										<Col>
-											<FormGroup>
-												<Label for="content">Content</Label>
-												<MdEditor
-													value={values.content}
-													style={{ height: '250px' }}
-													renderHTML={(text) => mdParser.render(text)}
-													onChange={({ text }) =>
-														setFieldValue('content', text)
-													}
-												/>
-												{errors.content && touched.content && (
-													<FormFeedback>{errors.content}</FormFeedback>
-												)}
-											</FormGroup>
-										</Col>
-									</Row>
-								</ModalBody>
-								<ModalFooter>
-									<Button color="primary" type="submit" disabled={isSubmitting}>
-										Add post
-									</Button>
-									<Button color="secondary" onClick={this.toggle}>
-										Cancel
-									</Button>
-								</ModalFooter>
-							</Form>
-						)}
-					</Formik>
-				</Modal>
+    render() {
+        const { posts, loading } = this.props.post;
+        const { currentPost } = this.state;
+
+        return (
+            <div>
 				<Jumbotron>
 					<h1 className="display-4">Welcome to KONEKTA Forum!</h1>
 					<p className="lead">
@@ -161,45 +129,129 @@ class PostsList extends Component {
 						<p>Join discussions across Africa! 🌍✨ {`🇺🇬 🇪🇬 🇳🇬 🇿🇦 🇰🇪 🇬🇭 🇪🇹 🇲🇦 🇨🇩 🇹🇳 🇿🇲 🇸🇩 🇸🇳 🇨🇲 🇿🇼 🇲🇿 🇲🇱 🇧🇫 🇲🇬 🇳🇪 🇲🇺 🇧🇼 🇪🇷 🇧🇮 🇱🇸 🇬🇲 🇱🇾 🇹🇬 🇸🇨 🇨🇫 🇹🇩 🇲🇼 🇩🇯`}</p>
 					</p>
 				</Jumbotron>
-				{loading ? (
-					<div className="w-100 d-flex justify-content-center">
-						<Spinner
-							type="grow"
-							color="primary"
-							style={{ width: '3rem', height: '3rem' }}
-						/>
-					</div>
-				) : (
-					<ListGroup>
-						<TransitionGroup className="posts-list">
-							{posts.map(({ _id, title, content }) => (
-								<CSSTransition
-									key={_id}
-									timeout={500}
-									classNames="fade"
-									appear
-								>
-									<ListGroupItem className="py-4">
-										<h3>{title}</h3>
-										<div
-											dangerouslySetInnerHTML={{
-												__html: DOMPurify.sanitize(renderMarkdown(content)), // Sanitize HTML to prevent XSS
-											}}
-										/>
-										<Link to={`/post/${_id}`}>
-											<Button color="primary">
-												Read post
-											</Button>
-										</Link>
-									</ListGroupItem>
-								</CSSTransition>
-							))}
-						</TransitionGroup>
-					</ListGroup>
-				)}
-			</div>
-		);
-	}
+                {this.props.isAuthenticated && (
+                    <div className="mb-3">
+                        <Button color="danger" onClick={this.toggle}>Add new post</Button>
+                    </div>
+                )}
+
+                {/* Add Post Modal */}
+                <Modal isOpen={this.state.modal} toggle={this.toggle}>
+                    <ModalHeader toggle={this.toggle}>Add new post</ModalHeader>
+                    <Formik
+                        initialValues={{ title: '', content: '' }}
+                        validationSchema={this.schema}
+                        onSubmit={(values, { resetForm }) => {
+                            this.props.addPost(values);
+                            resetForm();
+                            this.toggle();
+                        }}
+                    >
+                        {({ values, setFieldValue, errors, touched }) => (
+                            <Form>
+                                <ModalBody>
+                                    <Row form>
+                                        <Col>
+                                            <FormGroup>
+                                                <Label for="title">Title</Label>
+                                                <Input type="text" name="title" id="title" tag={Field} invalid={errors.title && touched.title} />
+                                                <FormFeedback>{errors.title}</FormFeedback>
+                                            </FormGroup>
+                                        </Col>
+                                    </Row>
+                                    <Row form>
+                                        <Col>
+                                            <FormGroup>
+                                                <Label for="content">Content</Label>
+                                                <MdEditor
+                                                    value={values.content}
+                                                    style={{ height: '250px' }}
+                                                    renderHTML={(text) => mdParser.render(text)}
+                                                    onChange={({ text }) => setFieldValue('content', text)}
+                                                />
+                                                {errors.content && touched.content && <FormFeedback>{errors.content}</FormFeedback>}
+                                            </FormGroup>
+                                        </Col>
+                                    </Row>
+                                </ModalBody>
+                                <ModalFooter>
+                                    <Button color="primary" type="submit">Add post</Button>
+                                    <Button color="secondary" onClick={this.toggle}>Cancel</Button>
+                                </ModalFooter>
+                            </Form>
+                        )}
+                    </Formik>
+                </Modal>
+
+                {/* Edit Post Modal */}
+                {currentPost && (
+                    <Modal isOpen={this.state.editModal} toggle={() => this.toggleEdit()}>
+                        <ModalHeader toggle={() => this.toggleEdit()}>Edit Post</ModalHeader>
+                        <Formik
+                            initialValues={{ title: currentPost.title, content: currentPost.content }}
+                            validationSchema={this.schema}
+                            onSubmit={(values) => {
+                                this.props.editPost(currentPost._id, values);
+                                this.toggleEdit();
+                            }}
+                        >
+                            {({ values, setFieldValue, errors, touched }) => (
+                                <Form>
+                                    <ModalBody>
+                                        <Row form>
+                                            <Col>
+                                                <FormGroup>
+                                                    <Label for="title">Title</Label>
+                                                    <Input type="text" name="title" id="title" tag={Field} invalid={errors.title && touched.title} />
+                                                    <FormFeedback>{errors.title}</FormFeedback>
+                                                </FormGroup>
+                                            </Col>
+                                        </Row>
+                                        <Row form>
+                                            <Col>
+                                                <FormGroup>
+                                                    <Label for="content">Content</Label>
+                                                    <MdEditor
+                                                        value={values.content}
+                                                        style={{ height: '250px' }}
+                                                        renderHTML={(text) => mdParser.render(text)}
+                                                        onChange={({ text }) => setFieldValue('content', text)}
+                                                    />
+                                                    {errors.content && touched.content && <FormFeedback>{errors.content}</FormFeedback>}
+                                                </FormGroup>
+                                            </Col>
+                                        </Row>
+                                    </ModalBody>
+                                    <ModalFooter>
+                                        <Button color="primary" type="submit">Save changes</Button>
+                                        <Button color="secondary" onClick={() => this.toggleEdit()}>Cancel</Button>
+                                    </ModalFooter>
+                                </Form>
+                            )}
+                        </Formik>
+                    </Modal>
+                )}
+
+                <ListGroup>
+                    <TransitionGroup className="posts-list">
+                        {posts.map(({ _id, title, content, postedBy }) => (
+                            <CSSTransition key={_id} timeout={500} classNames="fade" appear>
+                                <ListGroupItem className="py-4">
+                                    <h3>{title}</h3>
+                                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(mdParser.render(content)) }} />
+                                    <Button color="warning" onClick={() => this.toggleEdit({ _id, title, content })}>Edit</Button>
+                                    <Button color="danger" onClick={() => this.handleDelete(_id)}>Delete</Button>
+                                    <Link to={`/post/${_id}`}>
+                                        <Button color="primary">Read post</Button>
+                                    </Link>
+                                </ListGroupItem>
+                            </CSSTransition>
+                        ))}
+                    </TransitionGroup>
+                </ListGroup>
+            </div>
+        );
+    }
 }
 
 const mapStateToProps = (state) => ({

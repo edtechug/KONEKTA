@@ -5,13 +5,13 @@ WORKDIR /app
 
 ENV PATH /app/node_modules/.bin:$PATH
 ENV PUBLIC_URL https://konekta.onrender.com
-ENV REACT_APP_API_URI https://konekta.onrender.com/api
+ENV REACT_APP_API_URI https://konekta.onrender.com
 ENV REACT_APP_BASENAME /
 
 COPY package.json ./
 COPY package-lock.json ./
 
-RUN npm install
+RUN npm install --force
 
 COPY . ./
 
