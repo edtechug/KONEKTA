@@ -1,262 +1,144 @@
 import React, { Component } from 'react';
-import { Formik, Form, Field } from 'formik';
-import * as Yup from 'yup';
 import {
-	Alert,
-	Jumbotron,
-	ListGroup,
-	ListGroupItem,
-	Button,
-	Spinner,
-	Modal,
-	ModalHeader,
-	ModalBody,
-	ModalFooter,
-	FormGroup,
-	Label,
-	Input,
-	Row,
-	Col,
-	FormFeedback
+    Alert,
+    Jumbotron,
+    ListGroup,
+    ListGroupItem,
+    Spinner,
+    Button,
+	Row, Col, Card
 } from 'reactstrap';
+import { ProgressBar } from 'react-bootstrap';
+import Chart from 'react-google-charts';
+
 import { Link } from 'react-router-dom';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { getPosts, addPost } from '../actions/postActions';
-import MdEditor from 'react-markdown-editor-lite';
-import 'react-markdown-editor-lite/lib/index.css';
 import MarkdownIt from 'markdown-it';
-import DOMPurify from "dompurify"; 
-import axios from 'axios';
+import DOMPurify from "dompurify";
 
 const mdParser = new MarkdownIt();
 
-const API_URL = process.env.REACT_APP_API_URI + '/api/posts';
-
-export const editPost = (postId, postData) => async (dispatch, getState) => {
-    try {
-        const token = getState().auth.token;
-        const config = {
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        };
-        const res = await axios.put(`${API_URL}/${postId}`, postData, config);
-        dispatch({
-            type: 'EDIT_POST',
-            payload: res.data,
-        });
-    } catch (err) {
-        console.error(err);
-    }
-};
-
-export const deletePost = (postId) => async (dispatch, getState) => {
-    try {
-        const token = getState().auth.token;
-        const config = {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        };
-        await axios.delete(`${API_URL}/${postId}`, config);
-        dispatch({
-            type: 'DELETE_POST',
-            payload: postId,
-        });
-    } catch (err) {
-        console.error(err);
-    }
-};
-
-const renderMarkdown = (markdownText) => {
-    return markdownText
-        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-        .replace(/^## (.*$)/gim, '<h2>$1</h2>') 
-        .replace(/^# (.*$)/gim, '<h1>$1</h1>') 
-        .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>') 
-        .replace(/\*(.*?)\*/gim, '<em>$1</em>') 
-        .replace(/\n/g, '<br/>');
-};
-
 class PostsList extends Component {
     state = {
-        modal: false,
-        editModal: false,
-        currentPost: null,
-    };
-
-    schema = Yup.object().shape({
-        title: Yup.string().required('Title is required'),
-        content: Yup.string().required('Content is required'),
-    });
-
-    toggle = () => {
-        this.setState((prevState) => ({ modal: !prevState.modal }));
-    };
-
-    toggleEdit = (post = null) => {
-        this.setState({ editModal: !this.state.editModal, currentPost: post });
+        bandwidth: null,
+		usageData: [
+			['Country', 'Utilization'], // Correct column header
+			['UG', 60],
+			['EG', 40],
+			['NG', 50],
+			['CD', 30],
+			['ZA', 45]
+		]
     };
 
     componentDidMount() {
         this.props.getPosts();
+        this.measureBandwidth();
     }
 
-    handleDelete = (postId) => {
-        if (window.confirm('Are you sure you want to delete this post?')) {
-            this.props.deletePost(postId);
-        }
+    measureBandwidth = () => {
+        const imageUrl = "https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png";
+        const startTime = new Date().getTime();
+        
+        const img = new Image();
+        img.src = imageUrl + "?t=" + startTime;
+        img.onload = () => {
+            const endTime = new Date().getTime();
+            const duration = (endTime - startTime) / 1000;
+            const fileSize = 14 * 1024;
+            const speed = (fileSize / duration) / 1024;
+            
+            this.setState({ bandwidth: speed.toFixed(2) + " KBps" });
+        };
     };
+	
 
     render() {
         const { posts, loading } = this.props.post;
-        const { currentPost } = this.state;
+        const { bandwidth } = this.state;
+		
 
         return (
             <div>
-				<Jumbotron>
-					<h1 className="display-4">Welcome to KONEKTA Forum!</h1>
-					<p className="lead">
-						KONEKTA – Connecting Africa Through Knowledge, Innovation, and Technology. 🚀
-					</p>
-					<hr className="my-2" />
-					<p>
-						If you haven't done yet, we recommend you to{' '}
-						<Link to="/register">register a new account here</Link>.
+                <Jumbotron className="text-center">
+                    <h1 className="display-4">Welcome to KONEKTA Forum!</h1>
+                    <p className="lead">
+                        KONEKTA – Connecting Africa Through Knowledge, Innovation, and Technology. 🚀
+                    </p>
+                    <hr className="my-2" />
+                    <p>
+                        If you haven't done yet, we recommend you to{' '}
+                        <Link to="/register">register a new account here</Link>.
 						<p>Join discussions across Africa! 🌍✨ {`🇺🇬 🇪🇬 🇳🇬 🇿🇦 🇰🇪 🇬🇭 🇪🇹 🇲🇦 🇨🇩 🇹🇳 🇿🇲 🇸🇩 🇸🇳 🇨🇲 🇿🇼 🇲🇿 🇲🇱 🇧🇫 🇲🇬 🇳🇪 🇲🇺 🇧🇼 🇪🇷 🇧🇮 🇱🇸 🇬🇲 🇱🇾 🇹🇬 🇸🇨 🇨🇫 🇹🇩 🇲🇼 🇩🇯`}</p>
-					</p>
-				</Jumbotron>
-                {this.props.isAuthenticated && (
-                    <div className="mb-3">
-                        <Button color="danger" onClick={this.toggle}>Add new post</Button>
+                    </p>
+                    {bandwidth && (
+                        <p className="text-muted">Network Speed: {bandwidth}</p>
+                    )}
+                </Jumbotron>
+				<Row className="mt-4">
+                    <Col md={6}>
+                        <Card className="p-3 h-100">
+                            <h5>AI-Powered Network Resource Insights</h5>
+                            <p>Analyzing digital infrastructure utilization across Africa.</p>
+                            <ProgressBar now={60} label={`60% Utilized`} variant="success" className="mb-3" />
+                            <ProgressBar now={40} label={`40% Available`} variant="warning" />
+                        </Card>
+                    </Col>
+                    <Col md={6}>
+                        <Card className="p-3 h-100">
+                            <h5>Resource Utilization Heatmap</h5>
+                            <Chart
+                                chartType="GeoChart"
+                                width="100%"
+                                height="300px"
+                                data={this.state.usageData}
+                                options={{
+                                    region: '002', // Africa region
+                                    displayMode: 'regions',
+                                    resolution: 'countries',
+                                    colorAxis: { colors: ['#ffc107', '#28a745'] }
+                                }}
+                            />
+                        </Card>
+                    </Col>
+
+                </Row>
+
+                {loading ? (
+                    <div className="w-100 d-flex justify-content-center">
+                        <Spinner type="grow" color="primary" style={{ width: '3rem', height: '3rem' }} />
                     </div>
+                ) : (
+                    <ListGroup className="mt-4">
+                        <TransitionGroup className="posts-list">
+                            {posts.map(({ _id, title, content }) => (
+                                <CSSTransition key={_id} timeout={500} classNames="fade" appear>
+                                    <ListGroupItem className="py-4 shadow-sm border rounded bg-light mb-3">
+                                        <h3 className="text-primary">{title}</h3>
+                                        <div
+                                            className="text-muted"
+                                            dangerouslySetInnerHTML={{
+                                                __html: DOMPurify.sanitize(mdParser.render(content)),
+                                            }}
+                                        />
+                                        <div className="mt-3 d-flex justify-content-end">
+                                            <Link to={`/post/${_id}`}>
+                                                <Button color="primary">Read More</Button>
+                                            </Link>
+                                        </div>
+                                    </ListGroupItem>
+                                </CSSTransition>
+                            ))}
+                        </TransitionGroup>
+                    </ListGroup>
                 )}
-
-                {/* Add Post Modal */}
-                <Modal isOpen={this.state.modal} toggle={this.toggle}>
-                    <ModalHeader toggle={this.toggle}>Add new post</ModalHeader>
-                    <Formik
-                        initialValues={{ title: '', content: '' }}
-                        validationSchema={this.schema}
-                        onSubmit={(values, { resetForm }) => {
-                            this.props.addPost(values);
-                            resetForm();
-                            this.toggle();
-                        }}
-                    >
-                        {({ values, setFieldValue, errors, touched }) => (
-                            <Form>
-                                <ModalBody>
-                                    <Row form>
-                                        <Col>
-                                            <FormGroup>
-                                                <Label for="title">Title</Label>
-                                                <Input type="text" name="title" id="title" tag={Field} invalid={errors.title && touched.title} />
-                                                <FormFeedback>{errors.title}</FormFeedback>
-                                            </FormGroup>
-                                        </Col>
-                                    </Row>
-                                    <Row form>
-                                        <Col>
-                                            <FormGroup>
-                                                <Label for="content">Content</Label>
-                                                <MdEditor
-                                                    value={values.content}
-                                                    style={{ height: '250px' }}
-                                                    renderHTML={(text) => mdParser.render(text)}
-                                                    onChange={({ text }) => setFieldValue('content', text)}
-                                                />
-                                                {errors.content && touched.content && <FormFeedback>{errors.content}</FormFeedback>}
-                                            </FormGroup>
-                                        </Col>
-                                    </Row>
-                                </ModalBody>
-                                <ModalFooter>
-                                    <Button color="primary" type="submit">Add post</Button>
-                                    <Button color="secondary" onClick={this.toggle}>Cancel</Button>
-                                </ModalFooter>
-                            </Form>
-                        )}
-                    </Formik>
-                </Modal>
-
-                {/* Edit Post Modal */}
-                {currentPost && (
-                    <Modal isOpen={this.state.editModal} toggle={() => this.toggleEdit()}>
-                        <ModalHeader toggle={() => this.toggleEdit()}>Edit Post</ModalHeader>
-                        <Formik
-                            initialValues={{ title: currentPost.title, content: currentPost.content }}
-                            validationSchema={this.schema}
-                            onSubmit={(values) => {
-                                this.props.editPost(currentPost._id, values);
-                                this.toggleEdit();
-                            }}
-                        >
-                            {({ values, setFieldValue, errors, touched }) => (
-                                <Form>
-                                    <ModalBody>
-                                        <Row form>
-                                            <Col>
-                                                <FormGroup>
-                                                    <Label for="title">Title</Label>
-                                                    <Input type="text" name="title" id="title" tag={Field} invalid={errors.title && touched.title} />
-                                                    <FormFeedback>{errors.title}</FormFeedback>
-                                                </FormGroup>
-                                            </Col>
-                                        </Row>
-                                        <Row form>
-                                            <Col>
-                                                <FormGroup>
-                                                    <Label for="content">Content</Label>
-                                                    <MdEditor
-                                                        value={values.content}
-                                                        style={{ height: '250px' }}
-                                                        renderHTML={(text) => mdParser.render(text)}
-                                                        onChange={({ text }) => setFieldValue('content', text)}
-                                                    />
-                                                    {errors.content && touched.content && <FormFeedback>{errors.content}</FormFeedback>}
-                                                </FormGroup>
-                                            </Col>
-                                        </Row>
-                                    </ModalBody>
-                                    <ModalFooter>
-                                        <Button color="primary" type="submit">Save changes</Button>
-                                        <Button color="secondary" onClick={() => this.toggleEdit()}>Cancel</Button>
-                                    </ModalFooter>
-                                </Form>
-                            )}
-                        </Formik>
-                    </Modal>
-                )}
-
-                <ListGroup>
-                    <TransitionGroup className="posts-list">
-                        {posts.map(({ _id, title, content, postedBy }) => (
-                            <CSSTransition key={_id} timeout={500} classNames="fade" appear>
-                                <ListGroupItem className="py-4">
-                                    <h3>{title}</h3>
-                                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(mdParser.render(content)) }} />
-                                    <Button color="warning" onClick={() => this.toggleEdit({ _id, title, content })}>Edit</Button>
-                                    <Button color="danger" onClick={() => this.handleDelete(_id)}>Delete</Button>
-                                    <Link to={`/post/${_id}`}>
-                                        <Button color="primary">Read post</Button>
-                                    </Link>
-                                </ListGroupItem>
-                            </CSSTransition>
-                        ))}
-                    </TransitionGroup>
-                </ListGroup>
             </div>
         );
     }
 }
 
-const mapStateToProps = (state) => ({
-	post: state.post,
-	isAuthenticated: state.auth.isAuthenticated,
-});
-
+const mapStateToProps = (state) => ({ post: state.post, isAuthenticated: state.auth.isAuthenticated });
 export default connect(mapStateToProps, { getPosts, addPost })(PostsList);

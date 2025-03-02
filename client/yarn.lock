@@ -8536,6 +8536,11 @@ react-fast-compare@^2.0.1:
   resolved "https://registry.npmjs.org/react-fast-compare/-/react-fast-compare-2.0.4.tgz#e84b4d455b0fec113e0402c329352715196f81f9"
   integrity sha512-suNP+J1VU1MWFKcyt7RtjiSWUjvidmQSlqu+eHslq+342xCbGTYmC0mEhPCOHxlW0CywylOC1u2DFAT+bv4dBw==
 
+react-google-charts@^5.2.1:
+  version "5.2.1"
+  resolved "https://registry.npmjs.org/react-google-charts/-/react-google-charts-5.2.1.tgz#d9cbe8ed45d7c0fafefea5c7c3361bee76648454"
+  integrity sha512-mCbPiObP8yWM5A9ogej7Qp3/HX4EzOwuEzUYvcfHtL98Xt4V/brD14KgfDzSNNtyD48MNXCpq5oVaYKt0ykQUQ==
+
 react-is@^16.13.1, react-is@^16.3.2, react-is@^16.6.0, react-is@^16.7.0:
   version "16.13.1"
   resolved "https://registry.npmjs.org/react-is/-/react-is-16.13.1.tgz#789729a4dc36de2999dc156dd6c1d9c18cea56a4"
