@@ -6,11 +6,11 @@ import {
     ListGroupItem,
     Spinner,
     Button,
-	Row, Col, Card
+    Row, Col, Card,
+    Input, FormGroup
 } from 'reactstrap';
 import { ProgressBar } from 'react-bootstrap';
 import Chart from 'react-google-charts';
-
 import { Link } from 'react-router-dom';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import { connect } from 'react-redux';
@@ -18,25 +18,36 @@ import PropTypes from 'prop-types';
 import { getPosts, addPost } from '../actions/postActions';
 import MarkdownIt from 'markdown-it';
 import DOMPurify from "dompurify";
+import { OpenAI } from "openai";
 
 const mdParser = new MarkdownIt();
+
+const api = new OpenAI({
+    apiKey: process.env.REACT_APP_OPENAI_KEY,
+    baseURL: "https://api.aimlapi.com/v1",
+    dangerouslyAllowBrowser: true,
+});
 
 class PostsList extends Component {
     state = {
         bandwidth: null,
-		usageData: [
-			['Country', 'Utilization'], // Correct column header
-			['UG', 60],
-			['EG', 40],
-			['NG', 50],
-			['CD', 30],
-			['ZA', 45]
-		]
+        usageData: [
+            ['Country', 'Utilization'],
+            ['UG', 60], ['EG', 40], ['NG', 50], ['CD', 30], ['ZA', 45],
+            ['KE', 55], ['GH', 35], ['ET', 65], ['MA', 50], ['TN', 40],
+            ['ZM', 60], ['SD', 45], ['SN', 30], ['CM', 55], ['ZW', 35],
+            ['MZ', 70], ['ML', 25], ['BF', 50], ['MG', 45], ['NE', 60],
+            ['MU', 40], ['BW', 50], ['ER', 35], ['BI', 55], ['LS', 30]
+        ],
+        utilization: 60,
+        aiResponse: "Click 'Get AI Insights' to generate insights.",
+        userQuery: ""
     };
 
     componentDidMount() {
         this.props.getPosts();
         this.measureBandwidth();
+        this.startDataSimulation();
     }
 
     measureBandwidth = () => {
@@ -54,37 +65,68 @@ class PostsList extends Component {
             this.setState({ bandwidth: speed.toFixed(2) + " KBps" });
         };
     };
-	
+
+    startDataSimulation = () => {
+        setInterval(() => {
+            this.setState({
+				usageData: this.state.usageData.map(([country, value], index) =>
+                    index === 0 ? [country, value] : [country, Math.floor(Math.random() * 80) + 20]
+                ),
+				utilization: Math.floor(Math.random() * 80) + 20
+            });
+        }, 3000);
+    };
+
+    handleInputChange = (event) => {
+        this.setState({ userQuery: event.target.value });
+    };
+
+    getAIInsights = async () => {
+        const systemPrompt = "You are a network analyst providing insights on resource utilization.";
+        const userPrompt = this.state.userQuery || "Analyze the network usage data and suggest improvements.";
+        
+        try {
+            const completion = await api.chat.completions.create({
+                model: "mistralai/Mistral-7B-Instruct-v0.2",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt },
+                ],
+                temperature: 0.7,
+                max_tokens: 256,
+            });
+            
+            const response = completion.choices[0].message.content;
+            this.setState({ aiResponse: response });
+        } catch (error) {
+            console.error("Error fetching AI insights:", error);
+            this.setState({ aiResponse: "Failed to fetch AI insights. Please try again later." });
+        }
+    };
 
     render() {
         const { posts, loading } = this.props.post;
-        const { bandwidth } = this.state;
-		
-
+        const { bandwidth, aiResponse, userQuery, utilization } = this.state;
+        
         return (
             <div>
                 <Jumbotron className="text-center">
                     <h1 className="display-4">Welcome to KONEKTA Forum!</h1>
-                    <p className="lead">
-                        KONEKTA – Connecting Africa Through Knowledge, Innovation, and Technology. 🚀
-                    </p>
+                    <p className="lead">KONEKTA – Connecting Africa Through Knowledge, Innovation, and Technology. 🚀</p>
                     <hr className="my-2" />
-                    <p>
-                        If you haven't done yet, we recommend you to{' '}
-                        <Link to="/register">register a new account here</Link>.
-						<p>Join discussions across Africa! 🌍✨ {`🇺🇬 🇪🇬 🇳🇬 🇿🇦 🇰🇪 🇬🇭 🇪🇹 🇲🇦 🇨🇩 🇹🇳 🇿🇲 🇸🇩 🇸🇳 🇨🇲 🇿🇼 🇲🇿 🇲🇱 🇧🇫 🇲🇬 🇳🇪 🇲🇺 🇧🇼 🇪🇷 🇧🇮 🇱🇸 🇬🇲 🇱🇾 🇹🇬 🇸🇨 🇨🇫 🇹🇩 🇲🇼 🇩🇯`}</p>
-                    </p>
-                    {bandwidth && (
-                        <p className="text-muted">Network Speed: {bandwidth}</p>
-                    )}
+                    <p>If you haven't done yet, we recommend you to <Link to="/register">register a new account here</Link>.</p>
+					<p>Join discussions across Africa! 🌍✨ {`🇺🇬 🇪🇬 🇳🇬 🇿🇦 🇰🇪 🇬🇭 🇪🇹 🇲🇦 🇨🇩 🇹🇳 🇿🇲 🇸🇩 🇸🇳 🇨🇲 🇿🇼 🇲🇿 🇲🇱 🇧🇫 🇲🇬 🇳🇪 🇲🇺 🇧🇼 🇪🇷 🇧🇮 🇱🇸 🇬🇲 🇱🇾 🇹🇬 🇸🇨 🇨🇫 🇹🇩 🇲🇼 🇩🇯`}</p>
+
+                    {bandwidth && <p className="text-muted">Network Speed: {bandwidth}</p>}
                 </Jumbotron>
-				<Row className="mt-4">
+
+                <Row className="mt-4">
                     <Col md={6}>
                         <Card className="p-3 h-100">
                             <h5>AI-Powered Network Resource Insights</h5>
                             <p>Analyzing digital infrastructure utilization across Africa.</p>
-                            <ProgressBar now={60} label={`60% Utilized`} variant="success" className="mb-3" />
-                            <ProgressBar now={40} label={`40% Available`} variant="warning" />
+                            <ProgressBar now={utilization} label={`${utilization}% Utilized`} variant="success" className="mb-3" />
+                            <ProgressBar now={100 - utilization} label={`${100 - utilization}% Available`} variant="warning" />
                         </Card>
                     </Col>
                     <Col md={6}>
@@ -98,16 +140,26 @@ class PostsList extends Component {
                                 options={{
                                     region: '002', // Africa region
                                     displayMode: 'regions',
-                                    resolution: 'countries',
                                     colorAxis: { colors: ['#ffc107', '#28a745'] }
                                 }}
                             />
                         </Card>
                     </Col>
-
                 </Row>
-
-                {loading ? (
+                
+                <Row className="mt-4">
+                    <Col md={12}>
+                        <Card className="p-3">
+                            <h5>AI-Generated Network Insights</h5>
+                            <FormGroup>
+                                <Input type="text" value={userQuery} onChange={this.handleInputChange} placeholder="Type your question here..." />
+                            </FormGroup>
+                            <p>{aiResponse}</p>
+                            <Button color="primary" onClick={this.getAIInsights}>Get AI Insights</Button>
+                        </Card>
+                    </Col>
+                </Row>
+				{loading ? (
                     <div className="w-100 d-flex justify-content-center">
                         <Spinner type="grow" color="primary" style={{ width: '3rem', height: '3rem' }} />
                     </div>
