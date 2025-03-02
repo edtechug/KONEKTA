@@ -7,7 +7,14 @@ import {
     Spinner,
     Button,
     Row, Col, Card,
-    Input, FormGroup
+    FormGroup,
+	Modal,
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	Label,
+	Input,
+	FormFeedback
 } from 'reactstrap';
 import { ProgressBar } from 'react-bootstrap';
 import Chart from 'react-google-charts';
@@ -19,7 +26,10 @@ import { getPosts, addPost } from '../actions/postActions';
 import MarkdownIt from 'markdown-it';
 import DOMPurify from "dompurify";
 import { OpenAI } from "openai";
-
+import * as Yup from 'yup';
+import { Formik, Form, Field } from 'formik';
+import MdEditor from 'react-markdown-editor-lite';
+import 'react-markdown-editor-lite/lib/index.css';
 const mdParser = new MarkdownIt();
 
 const api = new OpenAI({
@@ -42,6 +52,13 @@ class PostsList extends Component {
         utilization: 60,
         aiResponse: "Click 'Get AI Insights' to generate insights.",
         userQuery: ""
+    };
+	schema = Yup.object().shape({
+        title: Yup.string().required('Title is required'),
+        content: Yup.string().required('Content is required'),
+    });
+	toggle = () => {
+        this.setState((prevState) => ({ modal: !prevState.modal }));
     };
 
     componentDidMount() {
@@ -119,6 +136,58 @@ class PostsList extends Component {
 
                     {bandwidth && <p className="text-muted">Network Speed: {bandwidth}</p>}
                 </Jumbotron>
+				{this.props.isAuthenticated && (
+                    <div className="mb-3">
+                        <Button color="danger" onClick={this.toggle}>Add new post</Button>
+					</div>
+				)}
+				{/* Add Post Modal */}
+                <Modal isOpen={this.state.modal} toggle={this.toggle}>
+                    <ModalHeader toggle={this.toggle}>Add new post</ModalHeader>
+                    <Formik
+                        initialValues={{ title: '', content: '' }}
+                        validationSchema={this.schema}
+                        onSubmit={(values, { resetForm }) => {
+                            this.props.addPost(values);
+                            resetForm();
+                            this.toggle();
+                        }}
+                    >
+                        {({ values, setFieldValue, errors, touched }) => (
+                            <Form>
+                                <ModalBody>
+                                    <Row form>
+                                        <Col>
+                                            <FormGroup>
+                                                <Label for="title">Title</Label>
+                                                <Input type="text" name="title" id="title" tag={Field} invalid={errors.title && touched.title} />
+                                                <FormFeedback>{errors.title}</FormFeedback>
+                                            </FormGroup>
+                                        </Col>
+                                    </Row>
+                                    <Row form>
+                                        <Col>
+                                            <FormGroup>
+                                                <Label for="content">Content</Label>
+                                                <MdEditor
+                                                    value={values.content}
+                                                    style={{ height: '250px' }}
+                                                    renderHTML={(text) => mdParser.render(text)}
+                                                    onChange={({ text }) => setFieldValue('content', text)}
+                                                />
+                                                {errors.content && touched.content && <FormFeedback>{errors.content}</FormFeedback>}
+                                            </FormGroup>
+                                        </Col>
+                                    </Row>
+                                </ModalBody>
+                                <ModalFooter>
+                                    <Button color="primary" type="submit">Add post</Button>
+                                    <Button color="secondary" onClick={this.toggle}>Cancel</Button>
+                                </ModalFooter>
+                            </Form>
+                        )}
+                    </Formik>
+                </Modal>
 
                 <Row className="mt-4">
                     <Col md={6}>
